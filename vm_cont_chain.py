@@ -13,14 +13,12 @@ def on_connect(client, userdata, flags, rc):
     will be called again thus renewing the subscriptions"""
 
     print("Connected to server (i.e., broker) with result code "+str(rc))
-    #replace user with your USC username in all subscriptions
-    client.subscribe("abdelrhm/ipinfo")
-    client.subscribe("abdelrhm/dateinfo")
-    client.subscribe("abdelrhm/timeinfo")
-    #Add the custom callbacks by indicating the topic and the name of the callback handle
-    client.message_callback_add("abdelrhm/ipinfo", on_message_from_ipinfo)
-    client.message_callback_add("abdelrhm/dateinfo", on_message_from_dateinfo)
-    client.message_callback_add("abdelrhm/timeinfo", on_message_from_timeinfo)
+    #subscribed to both ping and pong servers to keep the back-and-forth of info recieving continuous
+    client.subscribe("abdelrhm/ping")
+    client.subscribe("abdelrhm/pong")
+
+    #included the call back to let us know when information/messages from ping has been recieved
+    client.message_callback_add("abdelrhm/ping", on_message_from_ping)
 
 """This object (functions are objects!) serves as the default callback for 
 messages received when another node publishes a message this client is 
@@ -29,15 +27,12 @@ callback has not been registered using paho-mqtt's message_callback_add()."""
 def on_message(client, userdata, msg):
     print("Default callback - topic: " + msg.topic + "   msg: " + str(msg.payload, "utf-8"))
 
-#Custom message callback.
-def on_message_from_ipinfo(client, userdata, message):
-   print("Custom callback  - IP Message: "+message.payload.decode())
-
-def on_message_from_dateinfo(client, userdata, message):
-   print("Custom callback  - Date Message: "+message.payload.decode())
-
-def on_message_from_timeinfo(client, userdata, message):
-   print("Custom callback  - Time Message: "+message.payload.decode())
+# this function is the same as the on_message_from_pong function, except it publishes to pong
+def on_message_from_ping(client, userdata, message):
+   x = message.payload.decode()
+   x = int(x)
+   x += 1
+   client.publish("abdelrhm/pong",str(x))
 
 if __name__ == '__main__':
     
@@ -58,7 +53,7 @@ if __name__ == '__main__':
     server in the event no messages have been published from or sent to this 
     client. If the connection request is successful, the callback attached to
     `client.on_connect` will be called."""    
-    client.connect("68.181.32.115", 11000, 60)
+    client.connect("68.181.32.115", 1883, 60)
 
     """In our prior labs, we did not use multiple threads per se. Instead, we
     wrote clients and servers all in separate *processes*. However, every 
